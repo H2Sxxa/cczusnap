@@ -29,12 +29,12 @@ async def main() -> None:
             for c in clses:
                 if i == c.target_dy:
                     LOGGER.info("捕获",c)
-                    await client.chose_cls(t.web, c)
+                    LOGGER.info(await client.chose_cls(t.web, c))
         for n in t.names:
             for c in clses:
                 if n in c.name:
                     LOGGER.info("捕获",c)
-                    await client.chose_cls(t.web, c)
+                    LOGGER.info(await client.chose_cls(t.web, c))
 
 
 if __name__ == "__main__":

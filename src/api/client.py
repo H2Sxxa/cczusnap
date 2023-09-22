@@ -15,7 +15,7 @@ class ClassInfo(BaseModel):
 
 class CateInfo(BaseModel):
     name: str = ""
-    url: str = ""
+    cate_id: str = ""
 
 
 class APIClient:
@@ -120,7 +120,7 @@ class APIClient:
                     info(Resp.status)
                     raw = await Resp.text()
                     try:
-                        return raw.split("alert('")[1].split("')//]]>")[0]
+                        return raw.split("alert('")[-1].split("')//]]>")[0]
                     except Exception as e:
                         error(e)
                         warn(raw)
@@ -161,7 +161,7 @@ class APIClient:
                         )[0]
                     )
 
-    async def list_tables(self) -> None:
+    async def list_tables(self) -> List[CateInfo]:
         async with ClientSession(headers=cookie_fmt(self.cookie)) as Session:
             async with Session.get(
                 self.url + "web_xsxk/gx_ty_xkfs_xh_sql.aspx"
