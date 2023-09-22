@@ -13,9 +13,10 @@ class ClassInfo(BaseModel):
     name: str = ""
 
 
-class CateInfo(BaseModel):
+class TableInfo(BaseModel):
     name: str = ""
-    cate_id: str = ""
+    table_id: str = ""
+    target: str = ""
 
 
 class APIClient:
@@ -54,7 +55,7 @@ class APIClient:
             "__VIEWSTATEGENERATOR": info["__VIEWSTATEGENERATOR"][0],
         }
 
-    async def _make_chose_cls_info(self, url: str, target: str, arg: str) -> str:
+    async def _make_chose_info(self, url: str, target: str, arg: str) -> str:
         info = await self.__asp_info(url, use_cookie=True)
         return {
             "__EVENTTARGET": target,
@@ -65,11 +66,13 @@ class APIClient:
             "__VIEWSTATEENCRYPTED": "",
         }
 
-    async def unchose_cls(self, where: str, target: str, arg: str) -> None:
+    async def unchose_cls(self, where: str, ci: ClassInfo) -> None:
         async with ClientSession(headers=cookie_fmt(self.cookie)) as Session:
             async with Session.post(
                 self.url + where,
-                data=await self._make_chose_cls_info(self.url + where, target, arg),
+                data=await self._make_chose_cls_info(
+                    self.url + where, ci.target, ci.target_td
+                ),
             ) as Resp:
                 info(Resp.status, await Resp.text())
 
@@ -109,7 +112,7 @@ class APIClient:
         async with ClientSession(headers=cookie_fmt(self.cookie)) as Session:
             async with Session.post(
                 self.url + where,
-                data=await self._make_chose_cls_info(
+                data=await self._make_chose_info(
                     self.url + where, ci.target, ci.target_dy
                 ),
             ) as Resp:
@@ -147,25 +150,47 @@ class APIClient:
                     info(Resp.headers)
                     self.cookie = Resp.headers["Set-Cookie"]
 
-    async def goto_table(self) -> None:
-        async with ClientSession(headers=cookie_fmt(self.cookie)) as Session:
-            async with Session.get(self.url + "View/indexTablejw.aspx") as Resp:
-                if Resp.status != 200:
-                    error("错误的状态码", Resp.status)
-                    await self.goto_table()
-                else:
-                    element = fromstring(await Resp.text())
-                    info(
-                        element.xpath(
-                            "/html/body/form/div[3]/div[1]/div/div/span/text()"
-                        )[0]
-                    )
-
-    async def list_tables(self) -> List[CateInfo]:
+    async def list_tables(self) -> List[TableInfo]:
+        res = []
         async with ClientSession(headers=cookie_fmt(self.cookie)) as Session:
             async with Session.get(
                 self.url + "web_xsxk/gx_ty_xkfs_xh_sql.aspx"
             ) as Resp:
                 if Resp.status != 200:
-                    return await self.list_tables()
-                return #TODO Finish here
+                    error("错误的状态码", Resp.status)
+                    await self.list_tables()
+                raw = await Resp.text()
+                element = fromstring(raw)
+                info("当前用户 ->", element.xpath('//span[@class="LableCss"]/text()')[0])
+                items = element.xpath('//tr[@class="dg1-item"]')
+                __doPostBack = lambda target, t_id: (target, t_id)
+                for i in items:
+                    t, tid = eval(
+                        i.xpath('//input[@value="选 择"]/@onclick')[0].split(
+                            "javascript:"
+                        )[-1],
+                        {"__doPostBack": __doPostBack},
+                    )
+                    res.append(
+                        TableInfo(
+                            name=i.xpath(
+                                "td[4]/text()",
+                            )[0],
+                            table_id=tid,
+                            target=t,
+                        )
+                    )
+                return res
+
+    async def visit_table(self, _info: TableInfo) -> str:
+        _info = await self._make_chose_info(
+            self.url + "web_xsxk/gx_ty_xkfs_xh_sql.aspx", _info.target, _info.table_id
+        )
+        async with ClientSession(headers=cookie_fmt(self.cookie)) as Session:
+            async with Session.post(
+                self.url + "web_xsxk/gx_ty_xkfs_xh_sql.aspx",
+                data=_info,
+                allow_redirects=True,
+            ) as Resp:
+                #TODO Can't get anything useful here, fuck the CCZU
+                pass

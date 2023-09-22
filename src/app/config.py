@@ -13,6 +13,7 @@ class AppConfig(BaseModel):
 
 class TargetInfo(BaseModel):
     web: str = ""
+    webname: str = ""
     names: List[str] = []
     ids: List[str] = []
 
@@ -21,7 +22,7 @@ class TargetInfo(BaseModel):
 
 
 def load_targets(targets: List[str]) -> List[TargetInfo]:
-    def _load(web: str, name_inclued=[], id_included=[]):
+    def _load(web: str = None, webname: str = "", name_inclued=[], id_included=[]):
         return TargetInfo(web=web, names=name_inclued, ids=id_included)
 
     return [eval(t, {"load": _load}) for t in targets]
