@@ -6,6 +6,10 @@ class AppConfig(BaseModel):
     url: str = None
     account: str = None
     pwd: str = None
+    targets: str = []
+
+
+# [visit("web_xsxk/xfz_xsxk_gnxz.aspx?dm=0003-004"),match_name_include("体育"),match_id("Select$1")]
 
 
 def init_config() -> AppConfig:

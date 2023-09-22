@@ -62,7 +62,7 @@ class APIClient:
             ) as Resp:
                 LOGGER.info(Resp.status, await Resp.text())
 
-    async def chose_cls(self, where: str, target: str) -> None:
+    async def chose_cls(self, where: str, target: str) -> str:
         async with ClientSession(headers=cookie_fmt(self.cookie)) as Session:
             async with Session.post(
                 self.url + where,
@@ -70,9 +70,16 @@ class APIClient:
             ) as Resp:
                 if Resp.status != 200:
                     LOGGER.error("错误的状态码", Resp.status)
-                    await self.chose_cls(where, target)
+                    return await self.chose_cls(where, target)
                 else:
-                    LOGGER.info(Resp.status, await Resp.text())
+                    LOGGER.info(Resp.status)
+                    raw = await Resp.text()
+                    try:
+                        return raw.split("alert('")[1].split("')//]]>")[0]
+                    except Exception as e:
+                        LOGGER.error(e)
+                        LOGGER.warn(raw)
+                        return "No callback alert!"
 
     def has_cookie(self) -> bool:
         return self.cookie is not None
