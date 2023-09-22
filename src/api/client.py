@@ -13,6 +13,11 @@ class ClassInfo(BaseModel):
     name: str = ""
 
 
+class CateInfo(BaseModel):
+    name: str = ""
+    url: str = ""
+
+
 class APIClient:
     account: str
     pwd: str
@@ -68,7 +73,7 @@ class APIClient:
             ) as Resp:
                 info(Resp.status, await Resp.text())
 
-    async def list_cls(self, where: str) -> List[str]:
+    async def list_cls(self, where: str) -> List[ClassInfo]:
         res = list()
         async with ClientSession(headers=cookie_fmt(self.cookie)) as Session:
             async with Session.get(self.url + where) as Resp:
@@ -143,8 +148,6 @@ class APIClient:
                     self.cookie = Resp.headers["Set-Cookie"]
 
     async def goto_table(self) -> None:
-        if not self.has_cookie():
-            return warn("Plz login first!")
         async with ClientSession(headers=cookie_fmt(self.cookie)) as Session:
             async with Session.get(self.url + "View/indexTablejw.aspx") as Resp:
                 if Resp.status != 200:
@@ -157,3 +160,12 @@ class APIClient:
                             "/html/body/form/div[3]/div[1]/div/div/span/text()"
                         )[0]
                     )
+
+    async def list_tables(self) -> None:
+        async with ClientSession(headers=cookie_fmt(self.cookie)) as Session:
+            async with Session.get(
+                self.url + "web_xsxk/gx_ty_xkfs_xh_sql.aspx"
+            ) as Resp:
+                if Resp.status != 200:
+                    return await self.list_tables()
+                return #TODO Finish here
