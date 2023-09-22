@@ -21,7 +21,7 @@ async def main() -> None:
     client = APIClient(CONFIG.url, CONFIG.account, CONFIG.pwd)
     await client.login()
     LOGGER.info("获取Cookie", "->", client.cookie)
-    LOGGER.info(await client.chose_cls("web_xsxk/xfz_xsxk_fs1_zcxk.aspx", "Btxk$12"))
+    LOGGER.info(await client.list_cls("web_xsxk/xfz_xsxk_fs1_zcxk.aspx"))
 
 
 if __name__ == "__main__":

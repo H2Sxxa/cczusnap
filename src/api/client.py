@@ -1,10 +1,16 @@
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 from aiohttp import ClientSession
-from logng.logger import get_or_create_logger
+from logng.shared import info, error, warn
 from .header import HEADERS, cookie_fmt
 from lxml.html import fromstring
+from pydantic import BaseModel
 
-LOGGER = get_or_create_logger()
+
+class ClassInfo(BaseModel):
+    target_dy: str = ""
+    target_td: str = ""
+    target: str = ""
+    name: str = ""
 
 
 class APIClient:
@@ -43,49 +49,83 @@ class APIClient:
             "__VIEWSTATEGENERATOR": info["__VIEWSTATEGENERATOR"][0],
         }
 
-    async def _make_chose_cls_info(self, url: str, target: str) -> str:
+    async def _make_chose_cls_info(self, url: str, target: str, arg: str) -> str:
         info = await self.__asp_info(url, use_cookie=True)
         return {
-            "__EVENTTARGET": "GVgxkbk",
-            "__EVENTARGUMENT": target,
+            "__EVENTTARGET": target,
+            "__EVENTARGUMENT": arg,
             "__VIEWSTATE": info["__VIEWSTATE"][0],
             "__VIEWSTATEGENERATOR": info["__VIEWSTATEGENERATOR"][0],
             "__ASYNCPOST": True,
             "__VIEWSTATEENCRYPTED": "",
         }
 
-    async def unchose_cls(self, where: str, target: str) -> None:
+    async def unchose_cls(self, where: str, target: str, arg: str) -> None:
         async with ClientSession(headers=cookie_fmt(self.cookie)) as Session:
             async with Session.post(
                 self.url + where,
-                data=await self._make_chose_cls_info(self.url + where, target),
+                data=await self._make_chose_cls_info(self.url + where, target, arg),
             ) as Resp:
-                LOGGER.info(Resp.status, await Resp.text())
+                info(Resp.status, await Resp.text())
 
-    async def chose_cls(self, where: str, target: str) -> str:
+    async def list_cls(self, where: str) -> List[str]:
+        res = list()
+        async with ClientSession(headers=cookie_fmt(self.cookie)) as Session:
+            async with Session.get(self.url + where) as Resp:
+                if Resp.status != 200:
+                    return await self.list_cls(where)
+                elements = fromstring(await Resp.text()).xpath('//*[@class="dg1-item"]')
+                __doPostBack = lambda target, t_id: (target, t_id)
+                for e in elements:
+                    t, dy = eval(
+                        e.xpath('//input[@value="选课"]/@onclick')[0].split(
+                            "javascript:"
+                        )[-1],
+                        {"__doPostBack": __doPostBack},
+                    )
+                    _, td = eval(
+                        e.xpath('//input[@value="退选"]/@onclick')[0].split(
+                            "javascript:"
+                        )[-1],
+                        {"__doPostBack": __doPostBack},
+                    )
+
+                    res.append(
+                        ClassInfo(
+                            name=e.xpath("td[2]/text()")[0],
+                            target=t,
+                            target_dy=dy,
+                            target_td=td,
+                        )
+                    )
+        return res
+
+    async def chose_cls(self, where: str, ci: ClassInfo) -> str:
         async with ClientSession(headers=cookie_fmt(self.cookie)) as Session:
             async with Session.post(
                 self.url + where,
-                data=await self._make_chose_cls_info(self.url + where, target),
+                data=await self._make_chose_cls_info(
+                    self.url + where, ci.target, ci.target_dy
+                ),
             ) as Resp:
                 if Resp.status != 200:
-                    LOGGER.error("错误的状态码", Resp.status)
-                    return await self.chose_cls(where, target)
+                    error("错误的状态码", Resp.status)
+                    return await self.chose_cls(where, ci.target, ci.target_dy)
                 else:
-                    LOGGER.info(Resp.status)
+                    info(Resp.status)
                     raw = await Resp.text()
                     try:
                         return raw.split("alert('")[1].split("')//]]>")[0]
                     except Exception as e:
-                        LOGGER.error(e)
-                        LOGGER.warn(raw)
+                        error(e)
+                        warn(raw)
                         return "No callback alert!"
 
     def has_cookie(self) -> bool:
         return self.cookie is not None
 
     async def login(self) -> str:
-        LOGGER.info("使用账户", self.account)
+        info("使用账户", self.account)
         async with ClientSession(headers=HEADERS) as Session:
             async with Session.post(
                 self.url + "loginN.aspx",
@@ -93,26 +133,26 @@ class APIClient:
                 allow_redirects=False,
             ) as Resp:
                 if Resp.status != 302:
-                    LOGGER.error("错误的状态码", Resp.status)
-                    LOGGER.error(Resp.headers)
-                    LOGGER.warn("即将重试")
+                    error("错误的状态码", Resp.status)
+                    error(Resp.headers)
+                    warn("即将重试")
                     self.cookie = await self.login()
                 else:
-                    LOGGER.info("状态码", 302)
-                    LOGGER.info(Resp.headers)
+                    info("状态码", 302)
+                    info(Resp.headers)
                     self.cookie = Resp.headers["Set-Cookie"]
 
     async def goto_table(self) -> None:
         if not self.has_cookie():
-            return LOGGER.warn("Plz login first!")
+            return warn("Plz login first!")
         async with ClientSession(headers=cookie_fmt(self.cookie)) as Session:
             async with Session.get(self.url + "View/indexTablejw.aspx") as Resp:
                 if Resp.status != 200:
-                    LOGGER.error("错误的状态码", Resp.status)
+                    error("错误的状态码", Resp.status)
                     await self.goto_table()
                 else:
                     element = fromstring(await Resp.text())
-                    LOGGER.info(
+                    info(
                         element.xpath(
                             "/html/body/form/div[3]/div[1]/div/div/span/text()"
                         )[0]
