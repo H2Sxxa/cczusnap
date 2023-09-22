@@ -1,0 +1,9 @@
+[project]
+name = "cczusnap"
+version = "0.1.0"
+description = ""
+authors = [{ name = "H2Sxxa", email = "h2sxxa0w0@gmail.com" }]
+dependencies = ["Remilia", "aiohttp", "logng", "lxml"]
+requires-python = ">=3.11"
+readme = "README.md"
+license = { text = "MIT" }
