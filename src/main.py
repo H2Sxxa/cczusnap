@@ -6,7 +6,7 @@ LOGGER = get_or_create_logger(
     config=LogConfig(
         stdouts=(
             VirtualAttyStdout,
-            FileOutput("latest.log"),
+            FileOutput("latest.log", encoding="utf-8"),
         ),
         shared=True,
     )
