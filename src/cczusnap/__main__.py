@@ -12,8 +12,10 @@ LOGGER = get_or_create_logger(
     )
 )
 
-from api.client import APIClient
-from app.config import init_config, load_targets
+
+
+from cczusnap.api.client import APIClient
+from cczusnap.app.config import init_config, load_targets
 
 
 async def main() -> None:
