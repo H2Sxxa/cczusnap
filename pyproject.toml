@@ -3,7 +3,7 @@ name = "cczusnap"
 version = "0.1.0"
 description = ""
 authors = [{ name = "H2Sxxa", email = "h2sxxa0w0@gmail.com" }]
-dependencies = ["Remilia", "aiohttp", "logng", "lxml"]
+dependencies = ["Remilia==1.4.1", "aiohttp", "logng==0.1.3", "lxml"]
 requires-python = ">=3.11"
 readme = "README.md"
 license = { text = "MIT" }
