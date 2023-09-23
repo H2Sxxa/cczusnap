@@ -16,15 +16,13 @@ jobs:
       uses: actions/setup-python@v4.7.0
       with:
         python-version: 3.8.10
-    - uses: pdm-project/setup-pdm@v3
-      with:
-        version: 'head'
     - name: Install & Build
       run: |
+        pip install pdm
         pdm install
         pdm build
         pdm add pyinstaller
-    - name: pack
+    - name: Package
       run: |
         eval $(pdm venv activate)
         pyinstaller -F src/cczusnap/__main__.py
