@@ -22,7 +22,7 @@ jobs:
         pdm add pyinstaller
     - name: pack
       run: |
-        eval $(pdm venv activate)
+        pdm venv activate
         pyinstaller -F src/cczusnap/__main__.py
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v3.1.3
