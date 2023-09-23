@@ -8,10 +8,14 @@ on:
   workflow_dispatch:
 jobs:
   build:
-    name: Test
-    runs-on: ubuntu-latest
+    name: Build
+    runs-on: windows-latest
     steps:
     - uses: actions/checkout@v3
+    - name: Setup Python
+      uses: actions/setup-python@v4.7.0
+      with:
+        python-version: 3.8.10
     - uses: pdm-project/setup-pdm@v3
       with:
         version: 'head'
@@ -22,7 +26,7 @@ jobs:
         pdm add pyinstaller
     - name: pack
       run: |
-        pdm venv activate
+        eval $(pdm venv activate)
         pyinstaller -F src/cczusnap/__main__.py
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v3.1.3
