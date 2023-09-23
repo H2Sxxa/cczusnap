@@ -18,13 +18,10 @@ jobs:
         python-version: 3.8.10
     - name: Install & Build
       run: |
-        pip install pdm
-        pdm install
-        pdm build
-        pdm add pyinstaller
+        pip install .
+        pip install pyinstaller
     - name: Package
       run: |
-        Invoke-Expression (pdm venv activate)
         pyinstaller -F src/cczusnap/__main__.py
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v3.1.3
