@@ -22,8 +22,8 @@ class TargetInfo(BaseModel):
 
 
 def load_targets(targets: List[str]) -> List[TargetInfo]:
-    def _load(web: str = None, webname: str = "", name_inclued=[], id_included=[]):
-        return TargetInfo(web=web, names=name_inclued, ids=id_included)
+    def _load(web: str = None, name_included=[], id_included=[]):
+        return TargetInfo(web=web, names=name_included, ids=id_included)
 
     return [eval(t, {"load": _load}) for t in targets]
 
@@ -37,7 +37,7 @@ def init_config() -> AppConfig:
                 "account": "",
                 "password": "",
                 "targets": [
-                    'load(web="web_xsxk/xfz_xsxk_gnxz.aspx?dm=0003-004",name_inclued=["太极"],id_included=["Select$1"])'
+                    'load(web="web_xsxk/xfz_xsxk_gnxz.aspx?dm=0003-004",name_included=["太极"],id_included=["Select$1"])'
                 ],
             }
         )
