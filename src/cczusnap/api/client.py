@@ -1,9 +1,33 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, TypeVar
 from aiohttp import ClientSession
 from logng.shared import info, error, warn
 from .header import HEADERS, cookie_fmt
 from lxml.html import fromstring
 from pydantic import BaseModel
+
+__F = TypeVar("__F")
+
+
+def AsyncRetry(func: __F) -> __F:
+    async def _(*args, **kwargs):
+        try:
+            return await func(*args, **kwargs)
+        except Exception as e:
+            error(e)
+            await _(*args, **kwargs)
+
+    return _
+
+
+def SyncRetry(func: __F) -> __F:
+    def _(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            error(e)
+            _(*args, **kwargs)
+
+    return _
 
 
 class ClassInfo(BaseModel):
@@ -30,6 +54,7 @@ class APIClient:
         self.account = account
         self.pwd = pwd
 
+    @AsyncRetry
     async def __asp_info(self, url: str, use_cookie=False) -> Dict[str, str]:
         async with ClientSession(
             headers=cookie_fmt(self.cookie) if use_cookie else HEADERS
@@ -66,6 +91,7 @@ class APIClient:
             "__VIEWSTATEENCRYPTED": "",
         }
 
+    @AsyncRetry
     async def unchose_cls(self, where: str, ci: ClassInfo) -> None:
         async with ClientSession(headers=cookie_fmt(self.cookie)) as Session:
             async with Session.post(
@@ -76,6 +102,7 @@ class APIClient:
             ) as Resp:
                 info(Resp.status, await Resp.text())
 
+    @AsyncRetry
     async def list_cls(self, where: str) -> List[ClassInfo]:
         res = list()
         async with ClientSession(headers=cookie_fmt(self.cookie)) as Session:
@@ -108,6 +135,7 @@ class APIClient:
                     )
         return res
 
+    @AsyncRetry
     async def chose_cls(self, where: str, ci: ClassInfo) -> str:
         async with ClientSession(headers=cookie_fmt(self.cookie)) as Session:
             async with Session.post(
@@ -132,6 +160,7 @@ class APIClient:
     def has_cookie(self) -> bool:
         return self.cookie is not None
 
+    @AsyncRetry
     async def login(self) -> str:
         info("使用账户", self.account)
         async with ClientSession(headers=HEADERS) as Session:
@@ -150,6 +179,7 @@ class APIClient:
                     info(Resp.headers)
                     self.cookie = Resp.headers["Set-Cookie"]
 
+    @AsyncRetry
     async def list_tables(self) -> List[TableInfo]:
         res = []
         async with ClientSession(headers=cookie_fmt(self.cookie)) as Session:
@@ -182,6 +212,7 @@ class APIClient:
                     )
                 return res
 
+    @AsyncRetry
     async def visit_table(self, _info: TableInfo) -> str:
         _info = await self._make_chose_info(
             self.url + "web_xsxk/gx_ty_xkfs_xh_sql.aspx", _info.target, _info.table_id
@@ -192,5 +223,5 @@ class APIClient:
                 data=_info,
                 allow_redirects=True,
             ) as Resp:
-                #TODO Can't get anything useful here, fuck the CCZU
+                # TODO Can't get anything useful here, fuck the CCZU
                 pass

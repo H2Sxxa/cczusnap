@@ -44,12 +44,12 @@ def init_config() -> AppConfig:
         info("已生成配置文件config.yml，请填写后重启")
         exit(0)
     tb = _db.getTable("config.yml")
-    url = tb.readValueElse("url", None)
-    account = tb.readValueElse("account", None)
-    pwd = tb.readValueElse("password", None)
+    url = tb.readValueElse("url", "")
+    account = tb.readValueElse("account", "")
+    pwd = tb.readValueElse("password", "")
     targets = tb.readValueElse("targets", [])
 
-    if url is None or account is None or pwd is None:
+    if url == "" or account == "" or pwd == "":
         raise Exception("error config!")
     return AppConfig(
         url="http://" + url + "/", account=account, pwd=pwd, targets=targets
