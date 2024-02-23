@@ -4,6 +4,7 @@ from logng.shared import info, error, warn
 from .header import HEADERS, cookie_fmt
 from lxml.html import fromstring
 from pydantic import BaseModel
+from traceback import format_exc
 
 __F = TypeVar("__F")
 
@@ -14,6 +15,7 @@ def AsyncRetry(func: __F) -> __F:
             return await func(*args, **kwargs)
         except Exception as e:
             error(e)
+            error(format_exc())
             await _(*args, **kwargs)
 
     return _
@@ -61,7 +63,7 @@ class APIClient:
         ) as Session:
             async with Session.get(url) as Resp:
                 if Resp.status != 200:
-                    return self.__asp_info(url, use_cookie)
+                    return await self.__asp_info(url, use_cookie)
                 htmlxp = fromstring(await Resp.text())
                 return {
                     "__VIEWSTATE": htmlxp.xpath('//input[@id="__VIEWSTATE"]/@value'),
@@ -108,22 +110,29 @@ class APIClient:
         async with ClientSession(headers=cookie_fmt(self.cookie)) as Session:
             async with Session.get(self.url + where) as Resp:
                 if Resp.status != 200:
+                    error("状态码错误，重试")
                     return await self.list_cls(where)
                 elements = fromstring(await Resp.text()).xpath('//*[@class="dg1-item"]')
-                __doPostBack = lambda target, t_id: (target, t_id)
+
+                def __doPostBack(target, t_id):
+                    return target, t_id
+
                 for e in elements:
                     t, dy = eval(
-                        e.xpath('//input[@value="选课"]/@onclick')[0].split(
-                            "javascript:"
-                        )[-1],
+                        e.xpath('//input[@value="选课" or @value="选 课"]/@onclick')[
+                            0
+                        ].split("javascript:")[-1],
                         {"__doPostBack": __doPostBack},
                     )
-                    _, td = eval(
-                        e.xpath('//input[@value="退选"]/@onclick')[0].split(
-                            "javascript:"
-                        )[-1],
-                        {"__doPostBack": __doPostBack},
-                    )
+                    try:
+                        _, td = eval(
+                            e.xpath(
+                                '//input[@value="退选" or @value="退 选"]/@onclick'
+                            )[0].split("javascript:")[-1],
+                            {"__doPostBack": __doPostBack},
+                        )
+                    except Exception as e:
+                        td = None
 
                     res.append(
                         ClassInfo(
@@ -191,9 +200,14 @@ class APIClient:
                     await self.list_tables()
                 raw = await Resp.text()
                 element = fromstring(raw)
-                info("当前用户 ->", element.xpath('//span[@class="LableCss"]/text()')[0])
+                info(
+                    "当前用户 ->", element.xpath('//span[@class="LableCss"]/text()')[0]
+                )
                 items = element.xpath('//tr[@class="dg1-item"]')
-                __doPostBack = lambda target, t_id: (target, t_id)
+
+                def __doPostBack(target, t_id):
+                    return target, t_id
+
                 for i in items:
                     t, tid = eval(
                         i.xpath('//input[@value="选 择"]/@onclick')[0].split(
@@ -222,6 +236,6 @@ class APIClient:
                 self.url + "web_xsxk/gx_ty_xkfs_xh_sql.aspx",
                 data=_info,
                 allow_redirects=True,
-            ) as Resp:
+            ):
                 # TODO Can't get anything useful here, fuck the CCZU
                 pass

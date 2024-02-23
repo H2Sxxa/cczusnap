@@ -40,4 +40,5 @@ url: 202.195.102.53 # 选课地址
 ## 选课网址（可以自己用浏览器F12抓） 🔧
 
  - web_xsxk/xfz_xsxk_fs1_zcxk.aspx 教学任务课程
+ - web_xsxk/ggxx_xsxk_sql_new.aspx?dm=0003-001 通识类选课
  - web_xsxk/ty_xsxk_xh_sql_new.aspx?dm=0003-008 体育
